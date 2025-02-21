@@ -31,14 +31,14 @@ groups.put = function(config, group, callback) {
     // console.log("pre-assignment", global.distribution);
     
     global.distribution[config.gid || config] = {};
-    global.distribution[config.gid || config].status = require("../all/status.js")(config);
-    global.distribution[config.gid || config].gossip = require("../all/gossip.js")(config);
-    global.distribution[config.gid || config].groups = require("../all/groups.js")(config);
-    global.distribution[config.gid || config].mem = require("../all/mem.js")(config);
-    global.distribution[config.gid || config].routes = require("../all/routes.js")(config);
-    global.distribution[config.gid || config].comm = require("../all/comm.js")(config);
-    global.distribution[config.gid || config].store = require("../all/store.js")(config);
-    global.distribution[config.gid || config].mr = require("../all/mr.js")(config);
+    global.distribution[config.gid || config].status = require("../all/status.js")({gid: config.gid || config});
+    global.distribution[config.gid || config].gossip = require("../all/gossip.js")({gid: config.gid || config});
+    global.distribution[config.gid || config].groups = require("../all/groups.js")({gid: config.gid || config});
+    global.distribution[config.gid || config].mem = require("../all/mem.js")({gid: config.gid || config});
+    global.distribution[config.gid || config].routes = require("../all/routes.js")({gid: config.gid || config});
+    global.distribution[config.gid || config].comm = require("../all/comm.js")({gid: config.gid || config});
+    global.distribution[config.gid || config].store = require("../all/store.js")({gid: config.gid || config});
+    global.distribution[config.gid || config].mr = require("../all/mr.js")({gid: config.gid || config});
     // console.log("post assignment", global.distribution);
     if (typeof callback == 'function') {
         callback(null, group);

@@ -93,7 +93,7 @@ const start = function(callback) {
         // console.log(serialize([error, value]));
         if (error) {
           res.statusCode = 400;
-          // console.log([serialize(error),null])
+          console.log("hi", error);
           res.end(serialize([error,value]));
         } else {
           res.statusCode = 200;

@@ -26,7 +26,7 @@ test('(2 pts) all.comm.send(status.get(nid))', (done) => {
   // console.log(distribution)
   distribution.mygroup.comm.send(['nid'], remote, (e, v) => {
     console.log('during send');
-    console.log(`error: ${e}`);
+    console.log(`error: ${e.toString()}`);
     expect(e).toEqual({});
     try {
       expect(Object.values(v).length).toBe(nids.length);

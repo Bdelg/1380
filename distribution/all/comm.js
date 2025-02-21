@@ -24,8 +24,8 @@ function comm(config) {
    * @param {Callback} callback
    */
   function send(message, configuration, callback) {
-    console.log(configuration)
-    console.log(message)
+    console.log("configuration",configuration);
+    console.log("message",message);
     console.log(context.gid)
     require("../local/groups.js").get(context.gid, (e, nodes) => {
       console.log("nodes", nodes);
@@ -35,21 +35,24 @@ function comm(config) {
 
       const lim = Object.keys(nodes).length;
       let counter = 0;
-      let nodeToError = new Map();
-      let nodeToResponse = new Map();
+      let nodeToError = {};
+      let nodeToResponse = {};
 
-      for (sillygoose of Object.keys(nodes)) {
-        require("../local/comm.js").send(message, {node: nodes[sillygoose]}, (e,v) => {
+      for (const sillygoose in nodes) {
+        console.log('node', nodes[sillygoose])
+        require("../local/comm.js").send(message, {node: nodes[sillygoose], service: configuration.service, method: configuration.method}, (e,v) => {
+          console.log("e",e);
+          console.log("v",v);
           counter++;
           if(e) {
-            nodeToError.set(sillygoose, e);
+            nodeToError[sillygoose]= e;
           }
           if (v) {
-            nodeToResponse.set(sillygoose, v);
+            nodeToResponse[sillygoose] = v;
           }
-          if (counter == lim) {
-            callback(nodeToError.size?nodeToError:null, 
-              nodeToResponse.size?nodeToResponse:null);
+          if (counter >= lim) {
+            callback(nodeToError, 
+              nodeToResponse);
           }
         });
       }

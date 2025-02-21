@@ -1,3 +1,4 @@
+const { group } = require('yargs');
 const distribution = require('../../config.js');
 const id = distribution.util.id;
 
@@ -15,10 +16,16 @@ test('(5 pts) (scenario) create group', (done) => {
 
   const groupA = {};
   groupA[id.getSID(n1)] = n1;
+  groupA[id.getSID(n2)] = n2;
+  groupA[id.getSID(n3)] = n3;
   // Add nodes n2 and n3 to the group...
 
   const nids = Object.values(allNodes).map((node) => id.getNID(node));
-
+  distribution.local.groups.put('groupA', groupA, (e, v) => {
+    if (e) {
+      done(e);
+    }
+  })
   // Use distribution.local.groups.put to add groupA to the local node
   // Note: The groupA.status.get call should be inside the put method's callback.
     distribution.groupA.status.get('nid', (e, v) => {
@@ -37,14 +44,18 @@ test('(5 pts) (scenario) dynamic group membership', (done) => {
   const initialNodes = [n1, n2];
   const allNodes = [n1, n2, n3];
 
+  groupB[id.getSID(n1)] = n1;
+  groupB[id.getSID(n2)] = n2;
+
   // Create groupB...
 
   const config = {gid: 'groupB'};
 
   // Create the group with initial nodes
-  distribution.local.groups.put(config, initialNodes, (e, v) => {
+  distribution.local.groups.put(config, groupB, (e, v) => {
     // Add a new node dynamically to the group
-
+    groupB[id.getSID(n3)] = n3;
+    distribution.groupB.groups.put(config, groupB, (e, v) => {
       distribution.groupB.status.get('nid', (e, v) => {
         try {
           expect(Object.values(v)).toEqual(expect.arrayContaining(
@@ -54,6 +65,7 @@ test('(5 pts) (scenario) dynamic group membership', (done) => {
           done(error);
         }
       });
+    });
   });
 });
 
@@ -65,11 +77,13 @@ test('(5 pts) (scenario) group relativity', (done) => {
 */
   const groupC = {};
   // Create groupC in an appropriate way...
+  groupC[id.getSID(n2)] = n2;
 
 
   const config = {gid: 'groupC'};
 
   distribution.local.groups.put(config, groupC, (e, v) => {
+    groupC[id.getSID(n1)] = n1;
     distribution.groupC.groups.put(config, groupC, (e, v) => {
       // Modify the local 'view' of the group...
 
@@ -213,7 +227,3 @@ beforeAll((done) => {
 afterAll((done) => {
   stopAllNodes(done);
 });
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes

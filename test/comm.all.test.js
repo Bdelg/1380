@@ -22,8 +22,11 @@ const n6 = {ip: '127.0.0.1', port: 9006};
 test('(2 pts) all.comm.send(status.get(nid))', (done) => {
   const nids = Object.values(mygroupGroup).map((node) => id.getNID(node));
   const remote = {service: 'status', method: 'get'};
-
+  // console.log('before send')
+  // console.log(distribution)
   distribution.mygroup.comm.send(['nid'], remote, (e, v) => {
+    console.log('during send');
+    console.log(`error: ${e}`);
     expect(e).toEqual({});
     try {
       expect(Object.values(v).length).toBe(nids.length);
@@ -107,7 +110,6 @@ beforeAll((done) => {
     mygroupGroup[id.getSID(n4)] = n4;
     mygroupGroup[id.getSID(n5)] = n5;
 
-
     const groupInstantiation = () => {
       // Create the groups
       distribution.local.groups
@@ -116,13 +118,14 @@ beforeAll((done) => {
           });
     };
 
-
+    console.log('before start');
     // Now, start the nodes listening node
     distribution.node.start((server) => {
       localServer = server;
-
+      console.log('before spawn 1')
       // Start the nodes
       distribution.local.status.spawn(n1, (e, v) => {
+        console.log('after spawn 1')
         distribution.local.status.spawn(n2, (e, v) => {
           distribution.local.status.spawn(n3, (e, v) => {
             distribution.local.status.spawn(n4, (e, v) => {

@@ -78,4 +78,96 @@ distribution.all.comm.send(['sid'], {node: node, service: 'status', method: 'get
 
 # Results and Reflections
 
+<<<<<<< Updated upstream
 > ...
+=======
+# M0: Setup & Centralized Computing
+
+> Add your contact information below and in `package.json`.
+
+* name: `Brian Delgado`
+
+* email: `brian_delgado@brown.edu`
+
+* cslogin: `bdelgad1`
+
+
+## Summary
+
+> Summarize your implementation, including the most challenging aspects; remember to update the `report` section of the `package.json` file with the total number of hours it took you to complete M0 (`hours`), the total number of JavaScript lines you added, including tests (`jsloc`), the total number of shell lines you added, including for deployment and testing (`sloc`).
+
+
+My implementation consists of `9` components addressing T1--8. The most challenging aspect was `trying to implement tf-idf` because `it required expanding the current file-based storage method to include not just a global index of terms to urls, but also another which matched terms to the number of words contained in each document. Then, similarly to regular query, the tf-idf querier needs to parse both files, retrieve the information for each url matched to a term, and calculate the tf-idf score. This took me a lot of time in thinking and implementation, so I have not had the chance to test it yet, although according to chatgpt's calculation, I may be miscalculating something, but I still have to double check`.
+
+
+## Correctness & Performance Characterization
+
+
+> Describe how you characterized the correctness and performance of your implementation.
+
+
+To characterize correctness, we developed `8` that test the following cases: did base functions and pipeline through again, but abstracted links further (into just symbols in some cases) to make sure the changes were propagated through the entire pipeline. 
+
+
+*Performance*: The throughput of various subsystems is described in the `"throughput"` portion of package.json. The characteristics of my development machines are summarized in the `"dev"` portion of package.json.
+
+
+## Wild Guess
+
+> How many lines of code do you think it will take to build the fully distributed, scalable version of your search engine? Add that number to the `"dloc"` portion of package.json, and justify your answer below.
+
+I wrote 3000 lines in `package.json`, largely because I know that we're building a distributed system from scratch, which will require many components interacting together. Additionally, I have built (ie. in networks), apps that have been ~2000 lines long, and that was only implementing a single protocol for the output.
+
+# M1: Serialization / Deserialization
+
+
+## Summary
+
+> Summarize your implementation, including key challenges you encountered. Remember to update the `report` section of the `package.json` file with the total number of hours it took you to complete each task of M1 (`hours`) and the lines of code per task.
+
+
+My implementation comprises `2` software components, totaling `100` lines of code. Key challenges included: 
+* `1. Typing`: many componensts, such as `null`, `array`, `Error`, and `Date`, are all considered `objects` when using `typeof`, which was something I had to learn while testing, this led me to (1) type check for null before `object` in the sequential order of checking, and (2) use other functions, such as `Array.isArray` and `instance of`, to check for particular types.
+
+
+## Correctness & Performance Characterization
+
+
+> Describe how you characterized the correctness and performance of your implementation
+
+
+*Correctness*: I wrote `5` tests; these tests take `<time>` to execute. This includes objects with `<certain kinds of features>`.
+
+
+*Performance*: The latency of various subsystems is described in the `"latency"` portion of package.json. The characteristics of my development machines are summarized in the `"dev"` portion of package.json.
+
+
+# M2: Actors and Remote Procedure Calls (RPC)
+
+## Summary
+
+> Summarize your implementation, including key challenges you encountered. Remember to update the `report` section of the `package.json` file with the total number of hours it took you to complete each task of M2 (`hours`) and the lines of code per task.
+
+
+My implementation comprises `5` software components, totaling `150` lines of code. Key challenges included `routes, status, comm, node, and wire`.
+
+
+## Correctness & Performance Characterization
+
+> Describe how you characterized the correctness and performance of your implementation
+
+
+*Correctness*: I wrote `<number>` tests; these tests take `<time>` to execute.
+I did not get my tests to work. I ran out of time but will work on finishing these for the next milestone.
+
+*Performance*: I characterized the performance of comm and RPC by sending 1000 service requests in a tight loop. Average throughput and latency is recorded in `package.json`.
+
+
+## Key Feature
+
+> How would you explain the implementation of `createRPC` to someone who has no background in computer science — i.e., with the minimum jargon possible?
+
+We've done a lot of work to be able to store a function at a node(/computer). 
+This means we can call endpoints and ask them to execute functions, as long as they don't require any special information that's stored locally for a computer.
+createRPC allows us the ability to create a function (like a phone call), that someone else can make to execute a function that requires special information. By doing this, we don't have to provide that information ourselves, but the computer we are asking to do this work knows that information, and gives it the ability to change information it has stored locally in a more dynamic way.
+>>>>>>> Stashed changes

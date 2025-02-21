@@ -12,8 +12,14 @@ test('(2 pts) (scenario) simple callback practice', () => {
   function storeResults(result) {
     results.push(result);
   }
+<<<<<<< Updated upstream
 
   // ...
+=======
+  add(1, 2, storeResults);
+  add(3, 2, storeResults);
+  add(4, 3, storeResults);
+>>>>>>> Stashed changes
 
   expect(results).toEqual([3, 5, 7]);
 });
@@ -26,6 +32,7 @@ test('(2 pts) (scenario) collect errors and successful results', (done) => {
 
   // Sample service
   const appleDeliveryService = (callback) => {
+<<<<<<< Updated upstream
     // ...
   };
 
@@ -43,6 +50,25 @@ test('(2 pts) (scenario) collect errors and successful results', (done) => {
 
   const mangoDeliveryService = (callback) => {
     // ...
+=======
+    return callback(null, 'good apples');
+  };
+
+  const pineappleDeliveryService = (callback) => {
+    return callback(new Error('bad pineapples'), null);
+  };
+
+  const bananaDeliveryService = (callback) => {
+    return callback(null, 'good bananas');
+  };
+
+  const peachDeliveryService = (callback) => {
+    return callback(null, 'good peaches');
+  };
+
+  const mangoDeliveryService = (callback) => {
+    return callback(new Error('bad mangoes'), null);
+>>>>>>> Stashed changes
   };
 
   const services = [
@@ -95,10 +121,16 @@ test('(5 pts) (scenario) use rpc', (done) => {
 
   const node = {ip: '127.0.0.1', port: 9009};
 
+<<<<<<< Updated upstream
   let addOneRPC = '?';
 
   const rpcService = {
     addOne: addOneRPC,
+=======
+  let addRPC = distribution.util.wire.createRPC(distribution.util.wire.toAsync(addOne));
+  const rpcService = {
+    addOne: addRPC,
+>>>>>>> Stashed changes
   };
 
   distribution.node.start((server) => {
@@ -108,7 +140,10 @@ test('(5 pts) (scenario) use rpc', (done) => {
           {node: node, service: 'status', method: 'stop'},
           callback);
     }
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
     // Spawn the remote node.
     distribution.local.status.spawn(node, (e, v) => {
       // Install the addOne service on the remote node with the name 'addOneService'.
@@ -117,6 +152,10 @@ test('(5 pts) (scenario) use rpc', (done) => {
             // Call the addOne service on the remote node. This should actually call the addOne function on this code using RPC.
             distribution.local.comm.send([],
                 {node: node, service: 'addOneService', method: 'addOne'}, (e, v) => {
+<<<<<<< Updated upstream
+=======
+                  console.log('received req for serv')
+>>>>>>> Stashed changes
                   // Call the addOne service on the remote node again.
                   distribution.local.comm.send([],
                       {node: node, service: 'addOneService', method: 'addOne'}, (e, v) => {

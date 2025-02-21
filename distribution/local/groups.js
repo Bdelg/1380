@@ -73,7 +73,7 @@ groups.add = function(name, node, callback) {
 };
 
 groups.rem = function(name, node, callback) {
-    console.log('Node:',node.toString());
+    // console.log('Node:',node.toString());
     if (groupMapping.hasOwnProperty(name)) {
         if(groupMapping[name].hasOwnProperty(node)) {
             let deletedNode = groupMapping[name][node];

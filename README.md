@@ -78,7 +78,6 @@ distribution.all.comm.send(['sid'], {node: node, service: 'status', method: 'get
 
 # Results and Reflections
 
-<<<<<<< Updated upstream
 > ...
 =======
 # M0: Setup & Centralized Computing
@@ -170,4 +169,30 @@ I did not get my tests to work. I ran out of time but will work on finishing the
 We've done a lot of work to be able to store a function at a node(/computer). 
 This means we can call endpoints and ask them to execute functions, as long as they don't require any special information that's stored locally for a computer.
 createRPC allows us the ability to create a function (like a phone call), that someone else can make to execute a function that requires special information. By doing this, we don't have to provide that information ourselves, but the computer we are asking to do this work knows that information, and gives it the ability to change information it has stored locally in a more dynamic way.
->>>>>>> Stashed changes
+
+
+# M3: Node Groups & Gossip Protocols
+
+
+## Summary
+
+> Summarize your implementation, including key challenges you encountered. Remember to update the `report` section of the `package.json` file with the total number of hours it took you to complete each task of M3 (`hours`) and the lines of code per task.
+
+
+My implementation comprises `5` new software components, totaling `100` added lines of code over the previous implementation. Key challenges included `properly referring to the right reference objects for groups`.
+
+
+## Correctness & Performance Characterization
+
+> Describe how you characterized the correctness and performance of your implementation
+
+
+*Correctness* -- 1 working test so far.
+
+
+*Performance* -- spawn times (all students) and gossip (lab/ec-only).
+
+
+## Key Feature
+
+> What is the point of having a gossip protocol? Why doesn't a node just send the message to _all_ other nodes in its group?

@@ -24,7 +24,7 @@ function get(configuration, callback) {
             return;
         }
         // console.log("rpc callback");
-        const rpc = global.toLocal.get(configuration);
+        const rpc = global.toLocal[configuration];
         if (rpc) {
             // console.log("found you")
             callback(null, { call: rpc });

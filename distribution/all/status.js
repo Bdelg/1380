@@ -1,5 +1,3 @@
-// const distribution = require("@brown-ds/distribution");
-
 const status = function(config) {
   const context = {};
   context.gid = config.gid || 'all';
@@ -8,9 +6,10 @@ const status = function(config) {
     // message = args
     // configuration = service & method
     get: (configuration, callback) => {
-
+      // console.log('status all get')
       callback = callback || function() {};
       global.distribution[context.gid].comm.send([configuration], {service: 'status', method: 'get'}, (e,v) => {
+        // console.log(configuration)
         callback(e,v);
       });
     },

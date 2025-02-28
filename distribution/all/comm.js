@@ -24,11 +24,11 @@ function comm(config) {
    * @param {Callback} callback
    */
   function send(message, configuration, callback) {
-    console.log("configuration",configuration);
-    console.log("message",message);
-    console.log(context.gid)
+    // console.log("configuration",configuration);
+    // console.log("message",message);
+    // console.log(context.gid)
     require("../local/groups.js").get(context.gid, (e, nodes) => {
-      console.log("nodes", nodes);
+      // console.log("nodes", nodes);
       if (e) {
         callback(e);
       }
@@ -39,18 +39,18 @@ function comm(config) {
       let nodeToResponse = {};
 
       for (const sillygoose in nodes) {
-        console.log('node', nodes[sillygoose])
         require("../local/comm.js").send(message, {node: nodes[sillygoose], service: configuration.service, method: configuration.method}, (e,v) => {
-          console.log("e",e);
-          console.log("v",v);
+          // console.log("e",e);
+          // console.log("v",v);
           counter++;
           if(e) {
-            nodeToError[sillygoose]= e;
+            nodeToError[sillygoose] = e;
           }
           if (v) {
             nodeToResponse[sillygoose] = v;
           }
           if (counter >= lim) {
+            // console.log(nodeToError)
             callback(nodeToError, 
               nodeToResponse);
           }

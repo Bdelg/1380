@@ -47,12 +47,6 @@ const start = function(callback) {
 
     // Write some code...
 
-    let body = [];
-
-    req.on('data', (chunk) => {
-    });
-
-
     parsedUrl = url.parse(req.url, true);
     pathName = parsedUrl.pathname;
     splitPath = pathName.split('/').filter((s) => s !== '');
@@ -72,7 +66,6 @@ const start = function(callback) {
       Use the local routes service to get the service you need to call.
       You need to call the service with the method and arguments provided in the request.
       Then, you need to serialize the result and send it back to the caller.
-<<<<<<< Updated upstream
       */
 
       // Write some code...
@@ -91,58 +84,36 @@ const start = function(callback) {
         
         // console.log([error, value])
         // console.log(serialize([error, value]));
-        if (error) {
-          res.statusCode = 400;
-          console.log("hi", error);
-          res.end(serialize([error,value]));
-        } else {
-          res.statusCode = 200;
-          if(value[method]) {
-            value[method](...args, (e,v) => {
-              res.end(serialize([e, v]));
-            });
+        try{
+          if (error) {
+            res.statusCode = 400;
+            res.end(serialize([error,value]));
+            return;
           } else {
-            res.end(serialize([new Error('Method not found'), null]));
+            res.statusCode = 200;
+            if(value[method]) {
+              value[method](...args, (e,v) => {
+                // console.log(e)
+                res.end(serialize([e, v]));
+                return;
+              });
+            } else {
+              res.end(serialize([new Error('Method not found'), null]));
+              return;
+            }
+            
           }
+        } catch(e) {
+          res.statusCode = 500;
+          res.end(serialize([e,null]))
         }
-        
-        
-        
-        // if (error) {
-        //   console.log(`error: ${error}; service; ${service}; method: ${method}`);
-        //   res.statusCode = 400;
-        //   console.log(serialize(error))
-        //   res.end(serialize(error));
-        //   return;
-        // } else {
-        //   console.log(`value: ${value[method]}`);
-        //   if (value[method]) {
-        //     serialize(value[method](...args, (e,v) => {
-        //       if (e) {
-        //         console.log(`error: ${e}`);
-        //         res.statusCode = 500;
-        //         res.end(serialize(e));
-        //         return;
-        //       }
-        //       res.statusCode = 200;
-        //       console.log(`success: ${v}`);
-        //       res.end(serialize(v));
-        //       res.error
-        //       return
-        //   }));
-        //   } else {
-        //     res.statusCode = 400;
-        //     res.end(serialize(new Error('Method not found')));
-        //     return;
-        //   }
-        // }
       });
     });
     req.on('error', (error) => {
       console.error(error);
+      res.end(serialize([error,null]))
     });
   });
-
 
   /*
     Your server will be listening on the port and ip specified in the config
@@ -160,7 +131,7 @@ const start = function(callback) {
   });
 
   server.on('error', (error) => {
-    // server.close();
+    server.close();
     log(`Server error: ${error}`);
     throw error;
   });

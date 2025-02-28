@@ -179,6 +179,7 @@ test('(1 pts) local.store.put/del()', (done) => {
   const key = 'gfringspd';
 
   local.store.put(user, key, (e, v) => {
+    console.log(e)
     local.store.del(key, (e, v) => {
       try {
         expect(e).toBeFalsy();

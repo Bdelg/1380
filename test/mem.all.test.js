@@ -35,6 +35,8 @@ test('(1 pts) all.mem.get(jcarb)', (done) => {
 test('(1 pts) all.mem.del(jcarb)', (done) => {
   distribution.mygroup.mem.del('jcarb', (e, v) => {
     try {
+      // console.log('testing')
+      // console.log(e)
       expect(e).toBeInstanceOf(Error);
       expect(v).toBeFalsy();
       done();
@@ -116,6 +118,7 @@ test('(1 pts) all.mem.put(no key)', (done) => {
   const user = {first: 'Josiah', last: 'Carberry'};
 
   distribution.mygroup.mem.put(user, null, (e, v) => {
+    expect(e).toBeFalsy();
     distribution.mygroup.mem.get(id.getID(user), (e, v) => {
       try {
         expect(e).toBeFalsy();
@@ -138,7 +141,7 @@ test(
       const nids = nodes.map((node) => id.getNID(node));
 
       distribution.group1.mem.put(user, key, (e, v) => {
-        const nid = id.consistentHash(kid, nids);
+        const nid = id.naiveHash(kid, nids);
         const pickedNode = nodes.filter((node) => id.getNID(node) === nid)[0];
         const remote = {node: pickedNode, service: 'mem', method: 'get'};
         const message = [{gid: 'group1', key: key}];

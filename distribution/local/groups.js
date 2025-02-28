@@ -3,19 +3,19 @@ const { group } = require('yargs');
 const util = require('../util/id.js');
 const groups = {};
 const groupMapping = new Map();
-groupMapping['all'] = {}; // TODO: Implement adding to this group based on put and add
+groupMapping.set('all',{})
+// groupMapping['all'] = {}; // TODO: Implement adding to this group based on put and add
 
 groups.get = function(name, callback) {
     switch(name) {
         case 'all':
             if (typeof callback == 'function') {
-                callback(null, groupMapping);
+                callback(null, groupMapping.get('all'));
             }
         default: 
-        console.log('default')
-            if (groupMapping.hasOwnProperty(name)) {
+            if (groupMapping.has(name)) {
                 if (typeof callback == 'function') {
-                    callback(null, groupMapping[name]);
+                    callback(null, groupMapping.get(name));
                 }
             } else {
                 if (typeof callback =='function') {
@@ -26,29 +26,30 @@ groups.get = function(name, callback) {
 };
 
 groups.put = function(config, group, callback) {
-    console.log(config)
-    groupMapping[config.gid || config] = group;
-    // console.log("pre-assignment", global.distribution);
+    // console.log(config)
+    // groupMapping[config.gid || config] = group;
+    groupMapping.set(config.gid || config, group);
+    groupMapping.set('all', Object.assign({},groupMapping.get('all'), group))
     
     global.distribution[config.gid || config] = {};
     global.distribution[config.gid || config].status = require("../all/status.js")({gid: config.gid || config});
     global.distribution[config.gid || config].gossip = require("../all/gossip.js")({gid: config.gid || config});
     global.distribution[config.gid || config].groups = require("../all/groups.js")({gid: config.gid || config});
-    global.distribution[config.gid || config].mem = require("../all/mem.js")({gid: config.gid || config});
+    global.distribution[config.gid || config].mem = require("../all/mem.js")({gid: config.gid || config, hash: config.hash});
     global.distribution[config.gid || config].routes = require("../all/routes.js")({gid: config.gid || config});
     global.distribution[config.gid || config].comm = require("../all/comm.js")({gid: config.gid || config});
-    global.distribution[config.gid || config].store = require("../all/store.js")({gid: config.gid || config});
+    global.distribution[config.gid || config].store = require("../all/store.js")({gid: config.gid || config, hash: config.hash});
     global.distribution[config.gid || config].mr = require("../all/mr.js")({gid: config.gid || config});
-    // console.log("post assignment", global.distribution);
     if (typeof callback == 'function') {
         callback(null, group);
     }
 };
 
 groups.del = function(name, callback) {
-    if(name in groupMapping) {
-        let group = groupMapping[name];
-        delete groupMapping[name];
+    if(groupMapping.has(name)) {
+        let group = groupMapping.get(name);
+        // delete groupMapping[name];
+        groupMapping.delete(name);
         if (typeof callback == 'function') {
             callback(null, group);
         }
@@ -60,8 +61,10 @@ groups.del = function(name, callback) {
 };
 
 groups.add = function(name, node, callback) {
-    if (groupMapping.hasOwnProperty(name)) {
-        groupMapping[name][util.getSID(node)] = node;
+    if (groupMapping.has(name)) {
+        groupMapping.get(name)[util.getSID(node)] = node;
+        groupMapping.get('all')[util.getSID(node)] = node;
+        // groupMapping[name][util.getSID(node)] = node;
         if (typeof callback == 'function') {
             callback(null, node);
         }
@@ -74,10 +77,12 @@ groups.add = function(name, node, callback) {
 
 groups.rem = function(name, node, callback) {
     // console.log('Node:',node.toString());
-    if (groupMapping.hasOwnProperty(name)) {
-        if(groupMapping[name].hasOwnProperty(node)) {
-            let deletedNode = groupMapping[name][node];
-            delete groupMapping[name][node];
+    if (groupMapping.has(name)) {
+        // if(groupMapping[name].hasOwnProperty(node)) {
+        if(groupMapping.get(name).hasOwnProperty(node)) {
+
+            let deletedNode = groupMapping.get(name)[node];
+            delete groupMapping.get(name)[node];
             if (typeof callback == 'function') {
                 callback(null, deletedNode);
             }

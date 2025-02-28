@@ -55,10 +55,24 @@ function naiveHash(kid, nids) {
 }
 
 function consistentHash(kid, nids) {
+  nids.sort();
+  const idNum = idToNum(kid)
+  // let newList = [];
+  // newList.push(...nids)
+  // newList.push(idNum)
+  // newList.sort()
+  let newList = [nids + [idNum]]
+  const index = newList.indexOf(idNum)
+  return nids[index<newList.length-1 ? index+1:0]
 }
 
 
 function rendezvousHash(kid, nids) {
+  nids.sort();
+  nids.map((nid)=> {nid+kid});
+  let hashed = Object.fromEntries(nids.map(nid => [getID(nid+kid), nid]))
+  let max = Object.keys(hashed).sort().pop();
+  return hashed[max];
 }
 
 module.exports = {

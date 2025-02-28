@@ -74,7 +74,7 @@ status.get = function(configuration, callback) {
     return
   }
 
-  callback(new Error('Status key not found'));
+  callback(new Error('Status key not found:', configuration), null);
 };
 
 

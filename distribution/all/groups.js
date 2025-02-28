@@ -5,8 +5,8 @@ const groups = function(config) {
   return {
     put: (config, group, callback) => {
       callback = callback || function() {};
-      console.log(config)
-      console.log(group)
+      // console.log(config)
+      // console.log(group)
       global.distribution[context.gid].comm.send([config, group], {service: 'groups', method: 'put'}, (e,v) => {
         callback(e,v);
       });
@@ -14,7 +14,7 @@ const groups = function(config) {
 
     del: (name, callback) => {
       callback = callback || function() {};
-      console.log(config)
+      // console.log(config)
       global.distribution[context.gid].comm.send([name], {service: 'groups', method: 'del'}, (e,v) => {
         callback(e,v);
       });

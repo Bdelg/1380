@@ -9,56 +9,59 @@ const RoutesMap = new Map();
  * @return {void}
  */
 function get(configuration, callback) {
-    if (typeof configuration == 'string') {
-        // console.log("string:", configuration)
-
-        if (configuration in RoutesMap) {
-            if (RoutesMap[configuration] === undefined) {
+    try {
+        if (typeof configuration == 'string') {
+            if (configuration in RoutesMap) {
+                if (RoutesMap[configuration] === undefined) {
+                    // console.log("returning string cfg")
+                    callback(new Error('Configuration is undefined'), null);
+                    return;
+                }
                 // console.log("returning string cfg")
-                callback(new Error('Configuration is undefined'), null);
+                // console.log(RoutesMap)
+                callback(null, RoutesMap[configuration]);
                 return;
             }
-            // console.log("returning string cfg")
-            console.log(RoutesMap)
-            callback(null, RoutesMap[configuration]);
-            return;
-        }
-        // console.log("rpc callback");
-        const rpc = global.toLocal[configuration];
-        if (rpc) {
-            // console.log("found you")
-            callback(null, { call: rpc });
-            // console.log("called back");
-            return;
-        } else {
-            // console.log("never together");
-            callback(new Error(`Service ${configuration} not found!`));
-            return;
-        }
-        // callback(new Error("Configuration not found"), null);
-    } else if (typeof configuration == 'object') {
-        console.log("obj")
-        if (configuration.service in global.distribution[configuration.gid].routes) {
-            if (global.distribution[configuration.gid] === undefined) {
-                callback(new Error('Configuration is undefined'), null);
-                return;
-            }
-            callback(null, global.distribution[configuration.gid].routes[configuration.service]);
-            return;
-        } else {
-            const rpc = global.toLocal.get(configuration.serviceName);
+            // console.log("rpc callback");
+            const rpc = global.toLocal[configuration];
             if (rpc) {
+                // console.log("found you")
                 callback(null, { call: rpc });
+                // console.log("called back");
                 return;
             } else {
-                callback(new Error(`Service ${configuration.serviceName} not found!`));
+                // console.log("never together");
+                callback(new Error(`Service ${configuration} not found!`));
                 return;
+            }
+            // callback(new Error("Configuration not found"), null);
+        } else if (typeof configuration == 'object') {
+            // console.log("obj")
+            // console.log(configuration.service in global.distribution[configuration.gid])
+            if (configuration.service in global.distribution[configuration.gid]) {
+                if (global.distribution[configuration.gid] === undefined) {
+                    callback(new Error('Configuration is undefined'), null);
+                    return;
                 }
+                callback(null, global.distribution[configuration.gid][configuration.service]);
+                return;
+            } else {
+                const rpc = global.toLocal[configuration.serviceName];
+                if (rpc) {
+                    callback(null, { call: rpc });
+                    return;
+                } else {
+                    callback(new Error(`Service ${configuration.serviceName} not found!!`));
+                    return;
+                    }
+            }
+            callback(new Error("Configuration not found"), null);
+            return;
         }
-        callback(new Error("Configuration not found"), null);
-        return;
+        callback(new Error("Type of configuration unknown:", typeof configuration));
+    } catch (e) {
+        callback(e);
     }
-    callback(new Error("Type of configuration unknown:", typeof configuration));
 }
 
 /**

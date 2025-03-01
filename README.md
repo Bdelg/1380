@@ -193,6 +193,26 @@ My implementation comprises `5` new software components, totaling `100` added li
 *Performance* -- spawn times (all students) and gossip (lab/ec-only).
 
 
-## Key Feature
 
-> What is the point of having a gossip protocol? Why doesn't a node just send the message to _all_ other nodes in its group?
+# M4: Distributed Storage
+
+
+## Summary
+
+> Summarize your implementation, including key challenges you encountered
+Mem + Store: Hashing + some memory structure (memory vs. files) to store given data. The biggest challenges were tracking current hashes, and using the proper distributed source of information in the distributed form of these services.
+
+Hash: simply applying formulas (with mod, sorting, and concatenation) to implement various functions for identifying nodes.
+
+Remember to update the `report` section of the `package.json` file with the total number of hours it took you to complete each task of M4 (`hours`) and the lines of code per task.
+
+
+## Correctness & Performance Characterization
+
+> Describe how you characterized the correctness and performance of your implementation
+
+
+*Correctness* -- number of tests and time they take.
+
+
+*Performance* -- insertion and retrieval.

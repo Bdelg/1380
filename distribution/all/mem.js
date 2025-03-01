@@ -13,10 +13,9 @@ function mem(config) {
       }
 
       key = global.distribution.util.id.getID(configuration);
+      kid = configuration
       
       config_to_node(key, context, (e, node) => {
-        // console.log(e)
-        // console.log(node)
         if (e) {
           callback(e, null);
           return;
@@ -26,16 +25,17 @@ function mem(config) {
           return;
         }
         // console.log(global.distribution)
-        global.distribution.local.comm.send([{gid: context.gid, key: key}], {node:node, service: 'mem', method: 'get'}, (e,v) => {
+        global.distribution.local.comm.send([{gid: context.gid, key: kid}], {node:node, service: 'mem', method: 'get'}, (e,v) => {
           // console.log(e)
           callback(e,v)});
       })
     },
 
     put: (state, configuration, callback) => {
-      key = global.distribution.util.id.getID(configuration ? configuration:global.distribution.util.id.getID(state));
+      key = global.distribution.util.id.getID(configuration ? configuration:state);
+      kid = configuration?configuration:state;
       if(!configuration) {
-        console.log(key)
+        // console.log(key)
       }
       // key = global.distribution.util.id.getID(key);
 
@@ -50,7 +50,7 @@ function mem(config) {
           return
         }
         // console.log(global.distribution)
-        global.distribution.local.comm.send([state, {gid: context.gid, key: key}], {node:node, service: 'mem', method: 'put'}, (e,v) => {
+        global.distribution.local.comm.send([state, {gid: context.gid, key: kid}], {node:node, service: 'mem', method: 'put'}, (e,v) => {
           // console.log(e)
           // console.log(state);
           // console.log({gid: context.gid, key: key});
@@ -64,6 +64,7 @@ function mem(config) {
         return;
       }
       key = global.distribution.util.id.getID(configuration);
+      kid = configuration
       config_to_node(key, context, (e,node) => {
         if(e) {
           callback(e);
@@ -73,7 +74,7 @@ function mem(config) {
           callback(new Error('Node not found'));
           return;
         }
-        global.distribution.local.comm.send([{key: key, gid: context.gid}], {node:node, service: 'mem', method: 'del'}, (e,v) => {
+        global.distribution.local.comm.send([{key: kid, gid: context.gid}], {node:node, service: 'mem', method: 'del'}, (e,v) => {
           if (e) {
             callback(e);
             return

@@ -13,6 +13,12 @@ function put(state, configuration, callback) {
   const gid = configuration ? configuration.gid || 'all' : 'all';
 
   const filepath = `${gid}${key}`;
+  // console.log(filepath)
+  if(!key) {
+    if (callback) {
+      callback(new Error("No key or state given"));
+    }
+  }
   writeFile(filepath, serialize(state), 'utf-8', (err) => {
     if (err) {
       if (callback) {
@@ -27,14 +33,15 @@ function put(state, configuration, callback) {
 }
 
 function get(configuration, callback) {
-  const key = configuration ? configuration.key || configuration : configuration;
-  const gid = configuration ? configuration.gid || 'all' : 'all';
+  const key = configuration.key || configuration;
+  const gid =  configuration.gid || 'all';
   const filepath = `${gid}${key}`;
 
   if (key) {
     readFile(filepath, 'utf-8', (err, data) => {
       if (err) {
         if (callback) {
+          console.log(err);
           callback(new Error('File Failed to read'), null);
           return
         }

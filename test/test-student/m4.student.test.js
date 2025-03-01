@@ -7,10 +7,53 @@
 */
 
 const distribution = require('../../config.js');
+const id = distribution.util.id;
 
 test('(1 pts) student test', (done) => {
   // Fill out this test case...
-    done(new Error('Not implemented'));
+    let nums = [];
+    for(let i =0; i < 1000; i++) {
+      nums.push(Math.random());
+    }
+    let count = 0;
+    iterations = 1000;
+    let startTime = Date.now();
+    for(let i=0; i < iterations; i++) {
+      
+      distribution.mygroup.mem.put(nums[i], id.getID(nums[i]), (e,v) => {
+        expect(e).toBeFalsy();
+        count ++;
+        if(count >= iterations) {
+          // check timer, print, start new, get
+          let endTime = Date.now();
+          let duration = endTime - startTime;
+          console.log(`Throughput Test: Serialized and deserialized ${iterations} objects in ${duration} ms`);
+          console.log(`Throughput Test: ${iterations/ (duration / 1000)} operations per second`);          
+          startTime = Date.now()
+          let count2 = 0
+          for(let j = 0; j < iterations; j++) {
+            distribution.mygroup.mem.get(id.getID(nums[i]), (e,v) => {
+              expect(e).toBeFalsy();
+              expect(v).toBeTruthy();
+              count2++;
+              if (count2 >= iterations) {
+                endTime = Date.now()
+                duration = endTime-startTime
+                console.log(`Throughput Test: Serialized and deserialized ${iterations} objects in ${duration} ms`);
+                console.log(`Throughput Test: ${iterations/ (duration / 1000)} operations per second`);          
+                // stop timer, print
+                done();
+              }
+              
+            })
+          }
+        }
+      })
+    }
+
+    for(let i =0; i < 1000; i++) {
+      
+    }
 });
 
 
@@ -42,12 +85,6 @@ test('(1 pts) student test', (done) => {
 
 // This group is used for testing most of the functionality
 const mygroupGroup = {};
-// These groups are used for testing hashing
-const group1Group = {};
-const group2Group = {};
-const group3Group = {};
-// This group is used for {adding,removing} {groups,nodes}
-const group4Group = {};
 
 /*
    This hack is necessary since we can not
@@ -98,36 +135,17 @@ beforeAll((done) => {
 
     const groupInstantiation = (e, v) => {
       const mygroupConfig = {gid: 'mygroup'};
-      const group1Config = {gid: 'group1', hash: id.naiveHash};
-      const group2Config = {gid: 'group2', hash: id.consistentHash};
-      const group3Config = {gid: 'group3', hash: id.rendezvousHash};
-      const group4Config = {gid: 'group4'};
 
       // Create some groups
       distribution.local.groups
           .put(mygroupConfig, mygroupGroup, (e, v) => {
-            distribution.local.groups
-                .put(group1Config, group1Group, (e, v) => {
-                  distribution.local.groups
-                      .put(group2Config, group2Group, (e, v) => {
-                        distribution.local.groups
-                            .put(group3Config, group3Group, (e, v) => {
-                              distribution.local.groups
-                                  .put(group4Config, group4Group, (e, v) => {
-                                    done();
-                                  });
-                            });
-                      });
-                });
-          });
-    };
+            done()
+  })};
 
     // Start the nodes
     distribution.local.status.spawn(n1, (e, v) => {
       distribution.local.status.spawn(n2, (e, v) => {
-        distribution.local.status.spawn(n3, (e, v) => {
-          groupInstantiation
-        });
+        distribution.local.status.spawn(n3, groupInstantiation);
       });
     });
   });

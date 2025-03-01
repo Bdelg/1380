@@ -148,6 +148,7 @@ test(
 
         distribution.local.comm.send(message, remote, (e, v) => {
           try {
+            console.log(e)
             expect(e).toBeFalsy();
             expect(v).toEqual(user);
             done();

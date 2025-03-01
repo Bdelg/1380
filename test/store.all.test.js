@@ -137,6 +137,7 @@ test('(2 pts) all.store.put(jcarb)/local.comm.send(store.get(jcarb))',
       const nids = nodes.map((node) => id.getNID(node));
 
       distribution.mygroup.store.put(user, key, (e, v) => {
+        console.log(e);
         const nid = id.naiveHash(kid, nids);
         const pickedNode = nodes.filter((node) => id.getNID(node) === nid)[0];
         const remote = {node: pickedNode, service: 'store', method: 'get'};

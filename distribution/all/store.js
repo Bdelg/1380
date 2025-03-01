@@ -35,9 +35,6 @@ function store(config) {
 
     put: (state, configuration, callback) => {
       key = global.distribution.util.id.getID(configuration ? configuration:global.distribution.util.id.getID(state));
-      if(!configuration) {
-        console.log(key)
-      }
       // key = global.distribution.util.id.getID(key);
 
       config_to_node(key, context, (e, node) => {

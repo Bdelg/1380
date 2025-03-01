@@ -4,10 +4,9 @@ const MemMapping = {};
 
 function put(state, configuration, callback) {
     try {
-        const gid = configuration? configuration.gid || 'all': 'all';
-        const key = configuration? configuration.key || configuration || getID(state) : getID(state);
-
-        
+        const gid = configuration.gid || 'all';
+        const key = configuration ? configuration.key || configuration : getID(state);
+        // key = getID(key);
         if (!(MemMapping.hasOwnProperty(gid))) {
             MemMapping[gid] = new Map();
         }
@@ -24,19 +23,21 @@ function put(state, configuration, callback) {
 };
 
 function get(configuration, callback) {
+    if(configuration == null) {
+        callback(new Error('[get] no key provided.'), null);
+    }
+    // const key = getID(configuration.key || configuration);
     const key = configuration.key || configuration;
     // console.log(key)
     const gid = configuration.gid || 'all';
+    
 
     if (!(MemMapping.hasOwnProperty(gid))) {
-        callback(new Error("Group not found:", gid), null);
+        callback(new Error("[get] Group not found:"+ gid), null);
         return
     }
 
     if (!(MemMapping[gid].has(key))) {
-        // console.log(MemMapping[gid])
-        // console.log(key)
-        console.log(MemMapping)
         callback(new Error("[Get] Key not found: " + key), null);
         return;    
     }
@@ -46,11 +47,12 @@ function get(configuration, callback) {
 }
 
 function del(configuration, callback) {
-    const key = configuration.key || configuration || getID(state);
+    // const key = getID(configuration.key || configuration);
+    const key = configuration.key || configuration;
     const gid = configuration.gid || 'all';
 
     if (!(MemMapping.hasOwnProperty(gid))) {
-        callback(new Error("Group not found:", gid), null);
+        callback(new Error("Group not found:"+ gid), null);
         return
     }
 
@@ -62,7 +64,7 @@ function del(configuration, callback) {
         }
     } else {
         if (callback) {
-            callback(new Error('[Get] Key not found:', key), null);
+            callback(new Error('[Del] Key not found:' + key), null);
         }
     }
 };

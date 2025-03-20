@@ -91,14 +91,20 @@ const start = function(callback) {
             return;
           } else {
             res.statusCode = 200;
+            
             if(value[method]) {
-              value[method](...args, (e,v) => {
-                // console.log(e)
-                res.end(serialize([e, v]));
+              try {
+                value[method](...args, (e,v) => {
+                  // console.log(e)
+                  res.end(serialize([e, v]));
+                  return;
+                });
+              } catch(e) {
+                res.end(serialize([e, null]));
                 return;
-              });
+              }
             } else {
-              res.end(serialize([new Error('Method not found'), null]));
+              res.end(serialize([new Error('Method not found; path: ' + pathName), null]));
               return;
             }
             

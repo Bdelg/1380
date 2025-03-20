@@ -141,11 +141,13 @@ test(
       const nids = nodes.map((node) => id.getNID(node));
 
       distribution.group1.mem.put(user, key, (e, v) => {
+        console.log(e)
+        console.log(v)
         const nid = id.naiveHash(kid, nids);
         const pickedNode = nodes.filter((node) => id.getNID(node) === nid)[0];
         const remote = {node: pickedNode, service: 'mem', method: 'get'};
         const message = [{gid: 'group1', key: key}];
-
+        console.log(pickedNode)
         distribution.local.comm.send(message, remote, (e, v) => {
           try {
             console.log(e)

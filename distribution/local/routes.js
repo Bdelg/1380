@@ -74,7 +74,7 @@ function put(service, configuration, callback) {
     if (configuration != undefined | null | '') {
         RoutesMap[configuration] = service;
         if (typeof callback === 'function') {
-            callback(RoutesMap, configuration);
+            callback(null, configuration);
             return;
         }  
     }

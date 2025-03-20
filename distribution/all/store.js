@@ -1,3 +1,4 @@
+const getID = require('../util/id.js').getID;
 
 function store(config) {
   const context = {};
@@ -13,8 +14,8 @@ function store(config) {
         return;
       }
 
-      key = global.distribution.util.id.getID(configuration);
-      
+      // key = global.distribution.util.id.getID(configuration);
+      key = configuration
       config_to_node(key, context, (e, node) => {
         // console.log(e)
         // console.log(node)
@@ -27,14 +28,16 @@ function store(config) {
           return;
         }
         // console.log(global.distribution)
-        global.distribution.local.comm.send([{gid: context.gid, key: key}], {node:node, service: 'store', method: 'get'}, (e,v) => {
+        global.distribution.local.comm.send([{gid: context.gid, key: configuration}], {node:node, service: 'store', method: 'get'}, (e,v) => {
           // console.log(e)
           callback(e,v)});
       })
     },
 
     put: (state, configuration, callback) => {
-      key = global.distribution.util.id.getID(configuration ? configuration:global.distribution.util.id.getID(state));
+      // key = configuration
+      key = configuration ? configuration : getID(state);
+      // key = global.distribution.util.id.getID(configuration ? configuration:global.distribution.util.id.getID(state));
       // key = global.distribution.util.id.getID(key);
 
       config_to_node(key, context, (e, node) => {
@@ -48,7 +51,7 @@ function store(config) {
           return
         }
         // console.log(global.distribution)
-        global.distribution.local.comm.send([state, {gid: context.gid, key: key}], {node:node, service: 'store', method: 'put'}, (e,v) => {
+        global.distribution.local.comm.send([state, {gid: context.gid, key: configuration}], {node:node, service: 'store', method: 'put'}, (e,v) => {
           // console.log(e)
           // console.log(state);
           // console.log({gid: context.gid, key: key});
@@ -61,7 +64,8 @@ function store(config) {
         callback(new Error('no key given'));
         return;
       }
-      key = global.distribution.util.id.getID(configuration);
+      // key = global.distribution.util.id.getID(configuration);
+      key =  configuration
       config_to_node(key, context, (e,node) => {
         if(e) {
           callback(e);
@@ -71,7 +75,7 @@ function store(config) {
           callback(new Error('Node not found'));
           return;
         }
-        global.distribution.local.comm.send([{key: key, gid: context.gid}], {node:node, service: 'store', method: 'del'}, (e,v) => {
+        global.distribution.local.comm.send([{key: configuration, gid: context.gid}], {node:node, service: 'store', method: 'del'}, (e,v) => {
           if (e) {
             callback(e);
             return
@@ -82,6 +86,7 @@ function store(config) {
     },
     reconf: (configuration, callback) => {
     },
+    get_node: (configuration, callback) => {config_to_node(configuration, context, callback)},
   };
 };
 
@@ -89,8 +94,8 @@ function config_to_node(configuration, context, callback) {
   if(!configuration) {
     callback(new Error("No configuration"));
   }
-  // key = global.distribution.util.id.getID(configuration);
-  key = configuration;
+  key = global.distribution.util.id.getID(configuration);
+  // key = configuration;
   gid = context.gid;
   // console.log('hi')
   // retrieve nids for all nodes in group

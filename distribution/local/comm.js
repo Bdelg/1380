@@ -35,7 +35,7 @@ function send(message, remote, callback) {
             'Content-Length': Buffer.byteLength(serialize(message)),
         },
     }
-
+    // throw new Error('stack trace')
     let req = http.request(options, (res) => {
         let data = '';
         res.on('data', (chunk) => {

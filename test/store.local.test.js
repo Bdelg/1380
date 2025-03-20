@@ -179,7 +179,6 @@ test('(1 pts) local.store.put/del()', (done) => {
   const key = 'gfringspd';
 
   local.store.put(user, key, (e, v) => {
-    console.log(e)
     local.store.del(key, (e, v) => {
       try {
         expect(e).toBeFalsy();
@@ -215,6 +214,7 @@ test('(1 pts) local.store.put(no key)', (done) => {
   const user = {first: 'Gus', last: 'Fring'};
 
   local.store.put(user, null, (e, v) => {
+    // expect(e).toBeFalsy();
     local.store.get(id.getID(user), (e, v) => {
       try {
         expect(e).toBeFalsy();

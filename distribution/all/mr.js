@@ -1,5 +1,7 @@
 /** @typedef {import("../types").Callback} Callback */
 const getID = require('../util/id.js').getID;
+const getNID = require('../util/id.js').getNID;
+const log = require('../util/log.js');
 
 /**
  * Map functions used for mapreduce
@@ -25,7 +27,7 @@ const getID = require('../util/id.js').getID;
  */
 
 
-const MAP = 'map';
+const MAP = 'MAP';
 const SET_MAP = 'set_map';
 const GET_STATUS = 'get_status';
 
@@ -70,7 +72,7 @@ function mr(config) {
 
     // 1. Initiate service --> need name mr-id
     mr_id = 'mr-' + getID(Math.random());
-    console.log(mr_id);
+    // console.log(mr_id);
 
     // place orchestrator notify handler for messages from workers
     global.distribution.local.routes.put({notify: notify_me}, mr_id, (e,v) => {
@@ -84,11 +86,12 @@ function mr(config) {
       global.distribution[context.gid].routes.put(
         {exec_worker: 
           notification_handler(
-            build_notify(
-              {node: global.nodeConfig, mr_id: mr_id}
-            ).notify_orchestrator).notify}, 
+            // build_notify(
+              // {node: global.nodeConfig, mr_id: mr_id}
+            // ).notify_orchestrator)
+            ).notify}, 
             mr_id + '-notif', (e,v) => {
-              console.log(v);
+              // console.log(v);
         // send 
         if(e.length) {
           cb(new Error('oops'));
@@ -109,8 +112,9 @@ function mr(config) {
             console.log(node);
             console.log(key);
             // once we have the node, we can send it a ping with this key to make it map the value 
-            global.distribution.local.comm.send([{cmd: MAP, map_fn:map_fn, keys:[key]}],{node: node, service: mr_id + '-notif', method: 'exec_worker'}, (e,v) => {
-              console.log('cb called')
+            global.distribution.local.comm.send([{cmd: MAP, map_fn:map_fn, keys:[key], node: node, id: mr_id, gid: context.gid}],
+                {node: node, service: mr_id + '-notif', method: 'exec_worker'}, (e,v) => {
+              // console.log('cb called')
               console.log(e);
               console.log(v);
               cb(e,v)
@@ -127,62 +131,85 @@ function mr(config) {
   return {exec};
 };
 
-function notification_handler(cb) {
-  return{
-    notify(config) {  
-      if (!config) {
-        cb(new Error('No configuration object given.'));
-        return;
-      }
-      console.log('hi')
-      const fs = require('fs');
-      fs.writeFile('./helloworld', 'hiiiii');
-      switch(config.cmd){
-        case MAP:
-          if(!config.map_fn) {
-            cb(new Error('[Map cmd] No Mapping Function provided.'));
-            return;
-          }
-          let out = []
-          let count = 0;
-          for(key in config.keys) {
-            global.distribution.local.store.get({gid:config.id, key: key}, (e, file) => {
-              if(e) {
-                cb && cb(e);
-                return;
-              }
-              c++;
-              out.append(config.map_fn(key, file));
-              if(count >= config.keys.length) {
-                cb && cb(null, out);
-              }
-            });  
-          }
-          break;
-        default:
-          cb(new Error('[Notif Handler] Did not recognize command type'));
-      }
+// function in the worker which can get called on by the orchestrator to start particular steps.
+function notification_handler() {
+  function notify(config, callback) {  
+    if (!config) {
+      // cb(new Error('No configuration object given.'));
+      // global.distribution.local.comm.send([config.id, 'Error: [Worker node] No configuration provided on notification call.'], {node: config.node, service: config.id, method: 'notify'}, (e,v) => {
+        // console.log(global.distribution.local[config.id]);
+        // console.log(e);
+        // console.log(config.id)
+
+      console.log('done... error local store get');
+      callback && callback(new Error("[WORK call] No configuration object given."));
+      // });
+      return;
+    }
+    switch(config.cmd){
+      case 'MAP':
+        if(!config.map_fn) {
+          // cb(new Error('[Map cmd] No Mapping Function provided.'));
+          // global.distribution.local.comm.send([config.id, 'Error: [Map cmd] No Mapping Function provided.'], {node: config.node, service: config.id, method: 'notify'}, (e,v) => {
+          callback && callback(new Error("[WORK call] no Mapping function provided."))
+          // });
+          return;
+        }
+        let out = []
+        let count = 0;
+        for(const key in config.keys) {
+          global.distribution.local.store.get({gid:config.gid, key: config.keys[key]}, (e, file) => {
+            if(e) {
+              // cb && cb(e);
+              // global.distribution.local.comm.send([config.id, 'Error: ' + e.message], {node: config.node, service: config.id, method: 'notify'}, (e,v) => {
+                
+              //   console.log(global.distribution.local[config.id]);
+              //   console.log(e);
+              //   console.log(config.id)
+
+                // console.log('done... error local store get');
+
+                callback && callback(new Error("[WORK call]: "  + " Error in local store get: " + e.message))
+              // });
+              return;
+            }
+            count++;
+            out.push(config.map_fn(key, file));
+            if(count >= config.keys.length) {
+              // cb && cb(null, out);
+              global.distribution.local.comm.send([config.id, 'MAPPED'], {node: config.node, service: config.id, method: 'notify'}, (e,v) => {
+                // console.log(global.distribution.local[config.id]);
+                // console.log('hi')
+                callback && callback(null, out);
+              });
+            }
+          });  
+        }
+        break;
+      default:
+        cb(new Error('[Notif Handler] Did not recognize command type'));
     }
   }
+  return {notify: notify};
 }
 
-function build_notify(config) {
-  return{ 
-    notify_orchestrator: (e, message) => {
-      e && console.log(e);
-      console.log("made it to send to orch")
-      global.distribution.local.comm.send([config.mr_id, message], {node: config.node, service: config.mr_id, method: 'notify'}, (e,v) => {
-        // if (e) {
-        //   callback && callback(e);
-        //   return;
-        // }
-        // //
-        // callback && callback(null, v);
-        console.log('done');
-      });
-    }
-  }
-}
+// function build_notify(config) {
+//   return{ 
+//     notify_orchestrator: (e, message) => {
+//       e && console.log(e);
+//       console.log("made it to send to orch")
+//       global.distribution.local.comm.send([config.mr_id, message], {node: config.node, service: config.mr_id, method: 'notify'}, (e,v) => {
+//         // if (e) {
+//         //   callback && callback(e);
+//         //   return;
+//         // }
+//         // //
+//         // callback && callback(null, v);
+//         console.log('done');
+//       });
+//     }
+//   }
+// }
 
 
 function notify_me(mr_id, message, key) {
@@ -190,6 +217,7 @@ function notify_me(mr_id, message, key) {
     global.distribution.local[mr_id] = {};
   }
   global.distribution.local[mr_id][key] = message;
+  console.log(global.distribution.local[mr_id]);
   // for()
 }
 

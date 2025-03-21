@@ -60,10 +60,8 @@ function get(configuration, callback) {
     const filepath = path.join(nodePath, key);
     fs.readFile(filepath, 'utf-8', (err, data) => {
       if (err) {
-        if (callback) {
-          callback(new Error('File Failed to read'), null);
-          return
-        }
+        callback && callback(new Error('File Failed to read: ' + filepath), null);
+        return
       }
       const ret = deserialize(data);
       if (ret) {

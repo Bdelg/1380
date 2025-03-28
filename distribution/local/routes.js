@@ -1,6 +1,6 @@
 /** @typedef {import("../types").Callback} Callback */
 
-const routes = {}
+// const routes = {}
 const RoutesMap = new Map();
 
 /**
@@ -11,33 +11,37 @@ const RoutesMap = new Map();
 function get(configuration, callback) {
     try {
         if (typeof configuration == 'string') {
+            // console.log('made to string')
             if (configuration in RoutesMap) {
-                if (RoutesMap[configuration] === undefined) {
-                    // console.log("returning string cfg")
+                // console.log('local')
+                if (!RoutesMap[configuration]) {
+                    console.log('config undefined')
                     callback(new Error('Configuration is undefined'), null);
                     return;
                 }
-                // console.log("returning string cfg")
-                // console.log(RoutesMap)
-                callback(null, RoutesMap[configuration]);
+                // console.log('found')
+                console.log(RoutesMap[configuration])
+                const r = RoutesMap[configuration];
+                // console.log('found')
+                if(callback && typeof callback == 'function') {
+                    // console.log('passed')
+                    callback(null, r);
+                    return;
+                }
+                // callback && typeof callback == 'function' && callback(null, r);
+                // console.log('hi')
                 return;
             }
-            // console.log("rpc callback");
+            console.log('trying rpc')
             const rpc = global.toLocal[configuration];
             if (rpc) {
-                // console.log("found you")
                 callback(null, { call: rpc });
-                // console.log("called back");
                 return;
             } else {
-                // console.log("never together");
                 callback(new Error(`Service ${configuration} not found!`));
                 return;
             }
-            // callback(new Error("Configuration not found"), null);
         } else if (typeof configuration == 'object') {
-            // console.log("obj")
-            // console.log(configuration.service in global.distribution[configuration.gid])
             if (configuration.service in global.distribution[configuration.gid]) {
                 if (global.distribution[configuration.gid] === undefined) {
                     callback(new Error('Configuration is undefined'), null);
@@ -60,7 +64,8 @@ function get(configuration, callback) {
         }
         callback(new Error("Type of configuration unknown:", typeof configuration));
     } catch (e) {
-        callback(e);
+        console.log('NOOO')
+        callback(new Error("[Routes get] Error during get: " + e));
     }
 }
 
@@ -71,17 +76,21 @@ function get(configuration, callback) {
  * @return {void}
  */
 function put(service, configuration, callback) {
-    if (configuration != undefined | null | '') {
-        RoutesMap[configuration] = service;
+    try {
+        if (configuration != undefined | null | '') {
+            RoutesMap[configuration] = service;
+            if (typeof callback === 'function') {
+                callback(null, configuration);
+                return;
+            }  
+        }
         if (typeof callback === 'function') {
-            callback(null, configuration);
-            return;
-        }  
+            callback(new Error("Configuration identifier is not defined"),null);
+        }
+        return
+    } catch (e) {
+        callback(new Error('[Routes put] Error during put: ' + e))
     }
-    if (typeof callback === 'function') {
-        callback(new Error("Configuration identifier is not defined"),null);
-    }
-    return
 }
 
 /**

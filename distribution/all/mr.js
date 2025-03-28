@@ -62,16 +62,16 @@ function mr(config) {
     if (!configuration.keys) {
       cb(new Error("[MR] No keys given."));
     }
-    map_fn = configuration.map;
+    const map_fn = configuration.map;
     
     if (!map_fn) {
       map_fn = (k,v) => {return (k,v);}
     }
 
-    red_fn = configuration.reduce;
+    const red_fn = configuration.reduce;
 
     // 1. Initiate service --> need name mr-id
-    mr_id = 'mr-' + getID(Math.random());
+    const mr_id = 'mr-' + getID(Math.random());
     // console.log(mr_id);
 
     // place orchestrator notify handler for messages from workers
@@ -86,23 +86,18 @@ function mr(config) {
       global.distribution[context.gid].routes.put(
         {exec_worker: 
           notification_handler(
-            // build_notify(
-              // {node: global.nodeConfig, mr_id: mr_id}
-            // ).notify_orchestrator)
             ).notify}, 
             mr_id + '-notif', (e,v) => {
-              // console.log(v);
         // send 
         if(e.length) {
           cb(new Error('oops'));
           return;
         }
-        // cb && cb(new Error('not implemented yet'));
-        // return;
+        let count = 0;
         for (const k in configuration.keys) {
           console.log(configuration.keys);
           const key = configuration.keys[k]
-
+          
           // iterate through keys, choose hash and send to individual nodes
           global.distribution[context.gid].store.get_node(key, (e,node) => {
             if(e) {
@@ -111,19 +106,25 @@ function mr(config) {
             }
             console.log(node);
             console.log(key);
+            out =[];
             // once we have the node, we can send it a ping with this key to make it map the value 
             global.distribution.local.comm.send([{cmd: MAP, map_fn:map_fn, keys:[key], node: node, id: mr_id, gid: context.gid}],
                 {node: node, service: mr_id + '-notif', method: 'exec_worker'}, (e,v) => {
+              out.push(v);
               console.log(e);
               console.log(v);
-              cb(e,v)
+              // cb(null, v);
+              // count += v[0].length;
+              count++;
+              if(count >= configuration.keys.length) {
+                console.log('done')
+                cb(null, out);
+              }
             });
-          })
+          });
         }
-        console.log('worker put success')
       });
-    })
-
+    });
   }
 
   return {exec};
@@ -133,33 +134,54 @@ function mr(config) {
 function notification_handler() {
   function notify(config, callback) {  
     if (!config) {
+      console.log('done... error local store get');
       callback && callback(new Error("[WORK call] No configuration object given."));
       return;
     }
     switch(config.cmd){
       case 'MAP':
         if(!config.map_fn) {
-          callback && callback(new Error("[WORK call] no Mapping function provided."));
+          callback && callback(new Error("[WORK call] no Mapping function provided."))
           return;
         }
         let out = []
         let count = 0;
         for(const key in config.keys) {
+          // get original value
           global.distribution.local.store.get({gid:config.gid, key: config.keys[key]}, (e, file) => {
             if(e) {
               callback && callback(new Error("[WORK call]: "  + " Error in local store get: " + e.message))
               return;
             }
             count++;
+            // map and locally store values
             out.push(config.map_fn(key, file));
             if(count >= config.keys.length) {
-              global.distribution.local.comm.send([config.id, 'MAPPED'], {node: config.node, service: config.id, method: 'notify'}, (e,v) => {
-                if(e) {
-                  callback && callback(e);
-                  return;
+              let sendCount = 0;
+              // when finished, for each kv, send to corresponding node (shuffle)
+              for (const kv in out) {
+                for (const objKey in out[kv]) {
+                  global.distribution[config.gid].store.get_node(objKey, (e, node) => { // get corresponding node
+                    if (e) {
+                      callback && callback(new Error("[WORK call]: " + "Error in local store get node after mapping: " + e.message));
+                      return;
+                    }
+                    global.distribution.local.comm.send([out[kv][objKey], {key: config.id + "-mapped", gid: config.gid}, objKey], {node: node, service: 'store', method: 'append'}, (e,v) => {
+                      if (e) {
+                        callback && callback(new Error('[WORK call]: ' + "Error in local store append: " + e.message));
+                        return;
+                      }
+                      sendCount++;
+                      if (sendCount >= out.length) {
+                        callback && callback(null, out);
+                      }
+                    });
+                  });
                 }
-                callback && callback(null, out);
-              });
+              }
+              // global.distribution.local.comm.send([config.id, 'MAPPED'], {node: config.node, service: config.id, method: 'notify'}, (e,v) => {
+              //   callback && callback(null, out);
+              // });
             }
           });  
         }
@@ -171,12 +193,36 @@ function notification_handler() {
   return {notify: notify};
 }
 
+// function build_notify(config) {
+//   return{ 
+//     notify_orchestrator: (e, message) => {
+//       e && console.log(e);
+//       console.log("made it to send to orch")
+//       global.distribution.local.comm.send([config.mr_id, message], {node: config.node, service: config.mr_id, method: 'notify'}, (e,v) => {
+//         // if (e) {
+//         //   callback && callback(e);
+//         //   return;
+//         // }
+//         // //
+//         // callback && callback(null, v);
+//         console.log('done');
+//       });
+//     }
+//   }
+// }
+
+
 function notify_me(mr_id, message, key) {
-  if (!mr_id in global.distribution.local) {
-    global.distribution.local[mr_id] = {};
-  }
-  global.distribution.local[mr_id][key] = message;
-  console.log(global.distribution.local[mr_id]);
+  console.log('notifying myself');
+  // if (!"local" in global.distribution) {
+  //   global.distribution.local = {};
+  // }
+  // if (!mr_id in global.distribution.local) {
+  //   global.distribution.local[mr_id] = {};
+  // }
+  // global.distribution.local[mr_id][key] = message;
+  // console.log(global.distribution.local[mr_id]);
+  // for()
 }
 
 module.exports = mr;

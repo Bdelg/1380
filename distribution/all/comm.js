@@ -1,7 +1,5 @@
 /** @typedef {import("../types").Callback} Callback */
 
-// const distribution = require("../../config.js");
-const node = require("../local/node");
 
 /**
  * NOTE: This Target is slightly different from local.all.Target

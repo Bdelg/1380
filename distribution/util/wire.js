@@ -1,4 +1,3 @@
-const distribution = require('../../config.js');
 const routes = require('../local/routes');
 const { send } = require('../local/comm');
 const node = require('../local/node');

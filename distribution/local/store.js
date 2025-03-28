@@ -18,6 +18,12 @@ function put(state, configuration, callback) {
       key = getID(state)
   }
   const gidPath = path.join('.', 'store', gid);
+  if (!fs.existsSync(gidPath)) {
+    fs.mkdirSync(gidPath, { recursive: true });
+  }
+  if (configuration && configuration.service_id) {
+    gidPath = path.join(gidPath, configuration.service_id);
+  }
   const nodePath = path.join(gidPath, global.distribution.util.id.getSID(global.nodeConfig));
   const filepath = path.join(nodePath, key);
   
@@ -53,6 +59,9 @@ function get(configuration, callback) {
   const gid = configuration?configuration.gid || 'all': 'all';
   // const filepath = `./store/${global.distribution.util.id.getSID(global.nodeConfig).toString()}/${gid}${key}`;
   const gidPath = path.join('.', 'store', gid);
+  if (configuration && configuration.service_id) {
+    gidPath = path.join(gidPath, configuration.service_id);
+  }
   const nodePath = path.join(gidPath, global.distribution.util.id.getSID(global.nodeConfig));
   
 
@@ -107,6 +116,9 @@ function del(configuration, callback) {
   const gid = configuration ? configuration.gid || 'all' : 'all';
   // const filepath = `./store/${global.distribution.util.id.getSID(global.nodeConfig).toString()}/${gid}${key}`;
   const gidPath = path.join('.', 'store', gid);
+  if (configuration && configuration.service_id) {
+    gidPath = path.join(gidPath, configuration.service_id);
+  }
   const nodePath = path.join(gidPath, global.distribution.util.id.getSID(global.nodeConfig));
   const filepath = path.join(nodePath, key);
 
@@ -131,64 +143,88 @@ function del(configuration, callback) {
   }
 }
 
-// assumption that both stored and given values are objects -> merges and pushes
-// assumption 2: state contains none-merged k,v pairs
-function append(state, configuration, callback) {
+// assumption: key is mr execution id + tag, then object contained is object of all keys and values in the worker, and assumption that all values are contained in arrays
+function append(state, configuration, objKey, callback) {
   const key = configuration.key || configuration;
   const gid = configuration?configuration.gid || 'all': 'all';
+
   const gidPath = path.join('.', 'store', gid);
   const nodePath = path.join(gidPath, global.distribution.util.id.getSID(global.nodeConfig));
   const filepath = path.join(nodePath, key);
 
-  if (typeof state != 'object') {
-    callback(new Error('state needs to be object'));
-    return;
-  }
+  var curr;
   try {
-    fs.readFileSync(filepath, 'utf-8');
-    // data exists --> check and unify what we're looking at.
-      const data = deserialize(v);
-      for (key in state) {
-        if (key in Object.keys(data)) { // if both share a key
-          const curr_val = data[key];
-          if (typeof curr_val == 'object' && APPENDAGE_IDENTIFIER in Object.keys(curr_val)) {
-            // value is already our structured object --> simply append incoming value to list
-            data[key][APPENDAGE_IDENTIFIER] += [[state[key]]];
-          } else {
-            // value in data but it is not an object with identifier --> single value, so we can wrap it in our structure
-            const temp = data[key];
-            data[key] = {};
-            data[key][APPENDAGE_IDENTIFIER] = [[temp[APPENDAGE_IDENTIFIER]], [state[key]]];
-          }
-        } else {
-          // current key is not already in the data --> create structure for unity of format and add to object
-          new_val = {};
-          new_val[APPENDAGE_IDENTIFIER] = [[state[key]]];
-        }
-      }
-      put(data, configuration, (e,v) => {
-        if(e) {
-          callback && callback(e);
-          return;
-        }
-        callback(null, v);
-      });  
-  } catch (err) {
-    // file doesnt exist (implicit assumption)
-      let new_data = {};
-      for (const key in state) {
-        new_data[key] = {};
-        new_data[key][APPENDAGE_IDENTIFIER] = [[state[key]]];
-      }
-      put(new_data, configuration, (e,v) => {
-        if(e) {
-          callback && callback(e);
-          return;
-        }
-        callback && callback(null, v);
-      });
-    return;
-    } 
+    curr = deserialize(fs.readFileSync(filepath, 'utf-8'));
+  } catch (e) {
+    curr = {};
+  }
+  
+  try {  
+    var val;
+    if (curr.hasOwnProperty(objKey)) {
+      val = curr[objKey];
+    } else {
+      val = [];
+    }
+    // val = curr[objKey] || [];
+    val.push(state);
+    curr[objKey] = val;
+    fs.writeFileSync(filepath, serialize(curr), 'utf-8');
+
+    callback(null,curr);
+  } catch (e) {
+    callback(new Error('[Local.Store.Append] Error during execution: ' + e.message + " curr = " + val, null));
+  }
+
+  // if (typeof state != 'object') {
+  //   callback(new Error('state needs to be object'));
+  //   return;
+  // }
+  // try {
+  //   fs.readFileSync(filepath, 'utf-8');
+  //   // data exists --> check and unify what we're looking at.
+  //     const data = deserialize(v);
+  //     for (key in state) {
+  //       if (key in Object.keys(data)) { // if both share a key
+  //         const curr_val = data[key];
+  //         if (typeof curr_val == 'object' && APPENDAGE_IDENTIFIER in Object.keys(curr_val)) {
+  //           // value is already our structured object --> simply append incoming value to list
+  //           data[key][APPENDAGE_IDENTIFIER] += [[state[key]]];
+  //         } else {
+  //           // value in data but it is not an object with identifier --> single value, so we can wrap it in our structure
+  //           const temp = data[key];
+  //           data[key] = {};
+  //           data[key][APPENDAGE_IDENTIFIER] = [[temp[APPENDAGE_IDENTIFIER]], [state[key]]];
+  //         }
+  //       } else {
+  //         // current key is not already in the data --> create structure for unity of format and add to object
+  //         new_val = {};
+  //         new_val[APPENDAGE_IDENTIFIER] = [[state[key]]];
+  //       }
+  //     }
+  //     put(data, configuration, (e,v) => {
+  //       if(e) {
+  //         callback && callback(e);
+  //         return;
+  //       }
+  //       callback(null, v);
+  //     });  
+  // } catch (err) {
+  //   // file doesnt exist (implicit assumption)
+  //     let new_data = {};
+  //     for (const key in state) {
+  //       new_data[key] = {};
+  //       new_data[key][APPENDAGE_IDENTIFIER] = [[state[key]]];
+  //     }
+  //     put(new_data, configuration, (e,v) => {
+  //       if(e) {
+  //         callback && callback(e);
+  //         return;
+  //       }
+  //       callback && callback(null, v);
+  //     });
+  //   return;
+  //   } 
 }
 
 module.exports = {put, get, del, append};

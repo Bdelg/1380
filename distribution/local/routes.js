@@ -20,7 +20,7 @@ function get(configuration, callback) {
                     return;
                 }
                 // console.log('found')
-                console.log(RoutesMap[configuration])
+                // console.log(RoutesMap[configuration])
                 const r = RoutesMap[configuration];
                 // console.log('found')
                 if(callback && typeof callback == 'function') {
@@ -32,7 +32,7 @@ function get(configuration, callback) {
                 // console.log('hi')
                 return;
             }
-            console.log('trying rpc')
+            // console.log('trying rpc')
             const rpc = global.toLocal[configuration];
             if (rpc) {
                 callback(null, { call: rpc });

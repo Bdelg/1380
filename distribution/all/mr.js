@@ -72,7 +72,7 @@ function mr(config) {
 
     // 1. Initiate service --> need name mr-id
     const mr_id = 'mr-' + getID(Math.random());
-    // console.log(mr_id);
+    console.log(mr_id);
 
     // place orchestrator notify handler for messages from workers
     global.distribution.local.routes.put({notify: notify_me}, mr_id, (e,v) => {
@@ -95,7 +95,7 @@ function mr(config) {
         }
         let count = 0;
         for (const k in configuration.keys) {
-          console.log(configuration.keys);
+          // console.log(configuration.keys);
           const key = configuration.keys[k]
           
           // iterate through keys, choose hash and send to individual nodes
@@ -104,21 +104,41 @@ function mr(config) {
               cb && cb(e);
               return;
             }
-            console.log(node);
-            console.log(key);
+            // console.log(node);
+            
             out =[];
             // once we have the node, we can send it a ping with this key to make it map the value 
             global.distribution.local.comm.send([{cmd: MAP, map_fn:map_fn, keys:[key], node: node, id: mr_id, gid: context.gid}],
                 {node: node, service: mr_id + '-notif', method: 'exec_worker'}, (e,v) => {
               out.push(v);
-              console.log(e);
+              console.log(key);
               console.log(v);
+              console.log(e);
               // cb(null, v);
               // count += v[0].length;
+              console.log(configuration.keys)
+              console.log(count)
               count++;
               if(count >= configuration.keys.length) {
                 console.log('done')
-                cb(null, out);
+                // cb(null, out);
+                global.distribution[context.gid].comm.send([{cmd: 'REDUCE', red_fn: red_fn, id: mr_id + '-mapped', gid: context.gid}], 
+                  {service: mr_id + '-notif', method: 'exec_worker'},(e,v) => {
+                  if (e) {
+                    console.log(e)
+                    // cb && cb(e);
+                    // return;
+                  }
+                  console.log(v);
+                  let out = []
+                  for (const k in v) {
+                    // if (v[k]) {
+                    //   cb && cb(null, v[k])
+                    // }
+                    out = out.concat(v[k]);
+                  }
+                  cb && cb(null, out)
+                })
               }
             });
           });
@@ -150,34 +170,38 @@ function notification_handler() {
           // get original value
           global.distribution.local.store.get({gid:config.gid, key: config.keys[key]}, (e, file) => {
             if(e) {
-              callback && callback(new Error("[WORK call]: "  + " Error in local store get: " + e.message))
+              callback && callback(new Error("[WORK call]: "  + " Error in local store get: " + e.message));
               return;
             }
             count++;
             // map and locally store values
-            out.push(config.map_fn(key, file));
+            out.push(config.map_fn(config.keys[key], file));
+            // callback && callback(null, out[0][0][0]);
             if(count >= config.keys.length) {
               let sendCount = 0;
               // when finished, for each kv, send to corresponding node (shuffle)
-              for (const kv in out) {
-                for (const objKey in out[kv]) {
-                  global.distribution[config.gid].store.get_node(objKey, (e, node) => { // get corresponding node
-                    if (e) {
-                      callback && callback(new Error("[WORK call]: " + "Error in local store get node after mapping: " + e.message));
-                      return;
-                    }
-                    global.distribution.local.comm.send([out[kv][objKey], {key: config.id + "-mapped", gid: config.gid}, objKey], {node: node, service: 'store', method: 'append'}, (e,v) => {
+              for (const k in out) {
+                for (const k2 in out[k]) {
+                  for (const objKey in out[k][k2]) {
+                    global.distribution[config.gid].store.get_node(objKey, (e, node) => { // get corresponding node
                       if (e) {
-                        callback && callback(new Error('[WORK call]: ' + "Error in local store append: " + e.message));
+                        callback && callback(new Error("[WORK call]: " + "Error in local store get node after mapping: " + e.message));
                         return;
                       }
-                      sendCount++;
-                      if (sendCount >= out.length) {
-                        callback && callback(null, out);
-                      }
+                      global.distribution.local.comm.send([out[k][k2][objKey], {key: config.id + "-mapped", gid: config.gid}, objKey], {node: node, service: 'store', method: 'append'}, (e,v) => {
+                        if (e) {
+                          callback && callback(new Error('[WORK call]: ' + "Error in local store append: " + e.message));
+                          return;
+                        }
+                        sendCount++;
+                        if (sendCount >= out.length * out[k].length) {
+                          callback && callback(null, out);
+                        }
+                      });
                     });
-                  });
+                  }
                 }
+                
               }
               // global.distribution.local.comm.send([config.id, 'MAPPED'], {node: config.node, service: config.id, method: 'notify'}, (e,v) => {
               //   callback && callback(null, out);
@@ -186,8 +210,62 @@ function notification_handler() {
           });  
         }
         break;
+      case 'REDUCE':
+        //Reduce Process:
+        // Grab obj (mr-id-mapped)
+        //  for all kv's 
+        //  if !Array.isArray: return k,v
+        //  if .length > 2: reduction process
+        //  else: return k,v[0]  
+        if(!config.red_fn) {
+          callback && callback(new Error('[WORK call] No reducing function provided.'))
+          return;
+        }
+        global.distribution.local.store.get({gid: config.gid, key: config.id}, (e,v) => {
+          if (e) {
+            callback && callback('[WORK call: Reduce]: error during local store get: ' + e.message);
+            return;
+          }
+          if(!typeof v == 'object') {
+            callback && callback(new Error('[WORK: Reduce] Retrieved object is not an object'))
+            return;
+          }
+          let out = []
+          for (const k in v) {
+            if (!Array.isArray(v[k])) {
+              let val = {};
+              val[k] = v;
+              out.push(val);
+              continue;
+            }
+            if (v[k].length == 0) {
+              let val = {};
+              val[k] = v[k]
+              out.push(val);
+              // out[k] = v[k];
+              continue;
+            }
+            // if (v[k].length == 1) {
+            //   let val = {};
+            //   val[k] = v[k][0]
+            //   out.push(val);
+            //   // out[k] = v[k][0];
+            //   continue;
+            // }
+            // let red = v[k][0];
+            // for (const i = 1; i < v[k].length; i++) {
+            //   red = config.red_fn(red, v[k][i]);
+            // }
+            let red = config.red_fn(k, v[k]);
+            out.push(red);
+            // out[k] = red;
+          }
+          callback && callback(null, out);
+          return;
+        });
+        break;
       default:
-        cb(new Error('[Notif Handler] Did not recognize command type'));
+        callback && callback(new Error('[Notif Handler] Did not recognize command type: ' + config.cmd));
     }
   }
   return {notify: notify};

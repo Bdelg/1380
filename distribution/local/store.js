@@ -72,17 +72,22 @@ function get(configuration, callback) {
         callback && callback(new Error('File Failed to read: ' + filepath), null);
         return
       }
-      const ret = deserialize(data);
-      if (ret) {
-        if (callback) {
-          callback(null, ret);
-          return
+      try {
+        const ret = deserialize(data);
+        if (ret) {
+          if (callback) {
+            callback(null, ret);
+            return
+          }
+        } else {
+          if (callback) {
+            callback(new Error("No data found"), null);
+          }
         }
-      } else {
-        if (callback) {
-          callback(new Error("No data found"), null);
-        }
+      } catch (e) {
+        callback && callback(new Error('[Local.Store.Get] Error during execution: ' + e.message));
       }
+      
     });
   } else { // no key, return all keys
     // const dirPath = path.join('.', 'store', global.distribution.util.id.getSID(global.nodeConfig));
@@ -151,6 +156,12 @@ function append(state, configuration, objKey, callback) {
   const gidPath = path.join('.', 'store', gid);
   const nodePath = path.join(gidPath, global.distribution.util.id.getSID(global.nodeConfig));
   const filepath = path.join(nodePath, key);
+  if (!fs.existsSync(gidPath)) {
+    fs.mkdirSync(gidPath, { recursive: true });
+  }
+  if (!fs.existsSync(nodePath)) {
+    fs.mkdirSync(nodePath, { recursive: true });
+  }
 
   var curr;
   try {
@@ -170,7 +181,6 @@ function append(state, configuration, objKey, callback) {
     val.push(state);
     curr[objKey] = val;
     fs.writeFileSync(filepath, serialize(curr), 'utf-8');
-
     callback(null,curr);
   } catch (e) {
     callback(new Error('[Local.Store.Append] Error during execution: ' + e.message + " curr = " + val, null));

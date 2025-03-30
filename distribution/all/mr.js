@@ -201,11 +201,7 @@ function notification_handler() {
                     });
                   }
                 }
-                
               }
-              // global.distribution.local.comm.send([config.id, 'MAPPED'], {node: config.node, service: config.id, method: 'notify'}, (e,v) => {
-              //   callback && callback(null, out);
-              // });
             }
           });  
         }
@@ -242,23 +238,10 @@ function notification_handler() {
               let val = {};
               val[k] = v[k]
               out.push(val);
-              // out[k] = v[k];
               continue;
             }
-            // if (v[k].length == 1) {
-            //   let val = {};
-            //   val[k] = v[k][0]
-            //   out.push(val);
-            //   // out[k] = v[k][0];
-            //   continue;
-            // }
-            // let red = v[k][0];
-            // for (const i = 1; i < v[k].length; i++) {
-            //   red = config.red_fn(red, v[k][i]);
-            // }
             let red = config.red_fn(k, v[k]);
             out.push(red);
-            // out[k] = red;
           }
           callback && callback(null, out);
           return;
@@ -271,36 +254,9 @@ function notification_handler() {
   return {notify: notify};
 }
 
-// function build_notify(config) {
-//   return{ 
-//     notify_orchestrator: (e, message) => {
-//       e && console.log(e);
-//       console.log("made it to send to orch")
-//       global.distribution.local.comm.send([config.mr_id, message], {node: config.node, service: config.mr_id, method: 'notify'}, (e,v) => {
-//         // if (e) {
-//         //   callback && callback(e);
-//         //   return;
-//         // }
-//         // //
-//         // callback && callback(null, v);
-//         console.log('done');
-//       });
-//     }
-//   }
-// }
-
 
 function notify_me(mr_id, message, key) {
   console.log('notifying myself');
-  // if (!"local" in global.distribution) {
-  //   global.distribution.local = {};
-  // }
-  // if (!mr_id in global.distribution.local) {
-  //   global.distribution.local[mr_id] = {};
-  // }
-  // global.distribution.local[mr_id][key] = message;
-  // console.log(global.distribution.local[mr_id]);
-  // for()
 }
 
 module.exports = mr;

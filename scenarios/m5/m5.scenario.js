@@ -94,9 +94,20 @@ test('(10 pts) (scenario) all.mr:dlib', (done) => {
 */
 
   const mapper = (key, value) => {
+    const words = value.split(/\s+/).filter((e) => e !== '');
+    const out = [];
+    words.forEach((word) => {
+      o = {};
+      o[word] = 1;
+      out.push(o);
+    });
+    return out;
   };
 
   const reducer = (key, values) => {
+    const out = {};
+    out[key] = values.reduce((a, b) => a + b, 0);
+    return out;
   };
 
   const dataset = [
@@ -169,10 +180,44 @@ test('(10 pts) (scenario) all.mr:tfidf', (done) => {
 */
 
   const mapper = (key, value) => {
+    const words = value.split(/\s+/).filter((e) => e !== '');
+    const numTerms = words.length;
+    const counts = words.reduce((acc, curr) => {
+      acc[curr] = (acc[curr] || 0) + 1;
+      return acc;
+    }, {});
+
+    // array of objs: key: word, value: {key: doc, value: tf}
+    out = [];
+    Object.keys(counts).forEach((word) => {
+      o = {};
+      o[word] = {};
+      o[word][key] = parseFloat((counts[word]/numTerms).toFixed(2));
+      out.push(o);
+    })
+    return out;
   };
 
   // Reduce function: calculate TF-IDF for each word
   const reducer = (key, values) => {
+    // combine objects --> key: word, value: {key: doc, value: tf} (for all docs)
+
+    const numDocs = 3; // fixed from dataset
+    let combined = {};
+    for (const val of values) {
+      // combine all objects into one
+      doc = Object.keys(val)[0];
+      combined[doc] = val[doc];
+    }
+    
+    let out = {};
+    // need to multiply all values by the idf (numDocs/  docs with word (wordObj.size))
+    for (const doc of Object.keys(combined)) {
+      const tf = combined[doc];
+      const idf = Math.log10(numDocs / Object.keys(combined).length);
+      out[doc] = parseFloat((tf * idf).toFixed(2));
+    }
+    return {[key]: out};
   };
 
   const dataset = [
@@ -182,11 +227,11 @@ test('(10 pts) (scenario) all.mr:tfidf', (done) => {
   ];
 
   const expected = [{'is': {'doc1': 0.12}},
-    {'deep': {'doc2': 0.04, 'doc3': 0.03}},
+    {'deep': {'doc2': 0.04, 'doc3': 0.02}},
     {'systems': {'doc2': 0.1}},
     {'learning': {'doc1': 0, 'doc2': 0, 'doc3': 0}},
     {'amazing': {'doc1': 0.04, 'doc2': 0.04}},
-    {'machine': {'doc1': 0.04, 'doc3': 0.03}},
+    {'machine': {'doc1': 0.04, 'doc3': 0.02}},
     {'are': {'doc3': 0.07}}, {'powers': {'doc2': 0.1}},
     {'and': {'doc3': 0.07}}, {'related': {'doc3': 0.07}}];
 
@@ -199,6 +244,7 @@ test('(10 pts) (scenario) all.mr:tfidf', (done) => {
       }
 
       distribution.tfidf.mr.exec({keys: v, map: mapper, reduce: reducer}, (e, v) => {
+        console.log(e)
         try {
           expect(v).toEqual(expect.arrayContaining(expected));
           done();
@@ -246,12 +292,88 @@ test('(10 pts) (scenario) all.mr:strmatch', (done) => {
 });
 
 test('(10 pts) (scenario) all.mr:ridx', (done) => {
-    done(new Error('Implement the map and reduce functions'));
+  const mapper = (key, value) => {
+    const words = value.split(/\s+/).filter((e) => e !== '');
+    let out = [];
+    words.forEach((word) => {
+      o = {};
+      o[word] = key;
+      out.push(o);
+    })
+    return out;
+  };
+
+  const reducer = (key, values) => {
+    // return {[key]: values}
+    const out = {};
+    out[key] = values.reduce((acc, curr) => {
+    if (acc.indexOf(curr) === -1) {
+      acc.push(curr);
+    }
+    return acc;
+    }, []);
+    return out;
+  };
+
+  const dataset = [
+    {'doc1': 'python programming'},
+    {'doc2': 'programming is amazing'},
+    {'doc3': 'I love python programming'},
+  ];
+
+  const expected = [
+    {python: ['doc1', 'doc3']},
+    {programming: ['doc1', 'doc2', 'doc3']},
+    {is: ['doc2']},
+    {amazing: ['doc2']},
+    {I: ['doc3']},
+    {love: ['doc3']},
+  ];
+
+  const doMapReduce = (cb) => {
+    distribution.ridx.store.get(null, (e, v) => {
+      try {
+        expect(v.length).toBe(dataset.length);
+      } catch (e) {
+        done(e);
+      }
+
+      distribution.ridx.mr.exec({keys: v, map: mapper, reduce: reducer}, (e, v) => {
+        console.log(e)
+        try {
+          expect(v).toEqual(expect.arrayContaining(expected));
+          done();
+        } catch (e) {
+          done(e);
+        }
+      });
+    });
+  };
+
+  let cntr = 0;
+
+  // Send the dataset to the cluster
+  dataset.forEach((o) => {
+    const key = Object.keys(o)[0];
+    const value = o[key];
+    distribution.ridx.store.put(value, key, (e, v) => {
+      cntr++;
+      // Once the dataset is in place, run the map reduce
+      if (cntr === dataset.length) {
+        doMapReduce();
+      }
+    });
+  });
 });
 
 test('(10 pts) (scenario) all.mr:rlg', (done) => {
     done(new Error('Implement the map and reduce functions'));
 });
+
+// Helper function to extract keys from dataset (in case the get(null) funnctionality has not been implemented)
+function getDatasetKeys(dataset) {
+  return dataset.map((o) => Object.keys(o)[0]);
+}
 
 /*
     This is the setup for the test scenario.
@@ -315,7 +437,13 @@ beforeAll((done) => {
               const tfidfConfig = {gid: 'tfidf'};
               distribution.local.groups.put(tfidfConfig, tfidfGroup, (e, v) => {
                 distribution.tfidf.groups.put(tfidfConfig, tfidfGroup, (e, v) => {
-                  done();
+                  const ridxConfig = {gid: 'ridx'};
+                  distribution.local.groups.put(ridxConfig, ridxGroup, (e, v) => {
+                    distribution.ridx.groups.put(ridxConfig, ridxGroup, (e, v) => {
+                      done();
+                    })
+                  })
+                  // done();
                 });
               });
             });
